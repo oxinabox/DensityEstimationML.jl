@@ -1,6 +1,0 @@
-module NeuralContinuousConditionalDistributions
-
-
-include("./datagen.jl") 
-
-end # module
