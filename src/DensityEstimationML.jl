@@ -1,6 +1,9 @@
 module DensityEstimationML
 
+export GenerateDatasets
 
-include("./datagen.jl") 
+include("./GenerateDatasets.jl") 
+
+
 
 end # module
