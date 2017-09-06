@@ -6,7 +6,7 @@ This module contains functiosn for generating datasets suitable for testing dens
 module GenerateDatasets
 
 using Distributions
-
+import DensityEstimationML: sample_from_cdf
 
 """
 Generates a dataset with the same parameters as used in the tests of
@@ -24,7 +24,7 @@ function magdon_ismail_and_atiya(n=200)
 	rand(distr, n)
 end
 
-support(::Type{typeof(magdon_ismail_and_atiya)}) = (-Inf, Inf)
+Distributions.support(::typeof(magdon_ismail_and_atiya)) = (-Inf, Inf)
 
 """
 Generates a dataset with the same parameters as used in example 1 of tests by
@@ -39,7 +39,7 @@ function likas_1(n=5000)
 	rand(distr, n)
 end
 
-support(::Type{typeof(likas_1)})=(-12.0,12.0)
+Distributions.support(::typeof(likas_1))=(-12.0,12.0)
 
 """
 Generates a dataset with the same parameters as used in example 2 of tests by
@@ -70,27 +70,24 @@ Both works use the same 5000 samples
 This dataset is not conditional.
 """
 function likas_2(n=5000)
-	function sample(v)
-		#This is not quiet right
-
-		if v<3
-			# In linear part
-			#Apply inverse CDF
-			(6.5523)*(4+2sqrt(4-u))
-		else
-			# in quadratic part
-			
-			k1=((sqrt(9u^2-84u + 164) - 3u + 14)^(1/3)) / 2^(1/3)
-			k2= (2(2^(1/3)))/(sqrt(9u^2 - 84u + 164) - 3u + 14)^(1/3)
-
-
-			(6.5523)*(k1+k2+3)
-		end
+	function likas_2_cdf(x)
+	    1/6.5523 * if (x ≤ 0)
+		0.0
+	    elseif (0<x ≤ 2)
+		2x-x^2/4
+	    elseif (2<x≤3+√2)
+		-x^3/3 + 3x^2 -7x + 23/3
+	    else
+		@assert(3+√2 < x)
+		6.5523
+	    end
 	end
-	sample.(rand(n)
+
+
+	[sample_from_cdf(likas_2_cdf, 2.5) for _ in 1:n]
 end
 
-support(::Type{typeof(likas_2)})=(-1.0, 6.0)
+Distributions.support(::typeof(likas_2))=(-1.0, 6.0)
 
 const modha_and_fainman=likas_2
 
@@ -112,6 +109,6 @@ function likas_3(n=5000)
 	0.2 .* rand((2, n))
 end
 
-support(::Type{typeof(likas_3)})=([0., 0.],[0.2, 0.2])
+Distributions.support(::typeof(likas_3))=([0., 0.],[0.2, 0.2])
 
 end #module
