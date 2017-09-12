@@ -52,7 +52,7 @@ function backing_distribition(::MagdonIsmailAndAtiya)
 end
 
 approximate_support(::MagdonIsmailAndAtiya) = RealInterval(-50.0, 50.0)
-Base.rand(d::MagdonIsmailAndAtiya,  n=200) = rand(backing_distribition(d), n)
+Base.rand(d::MagdonIsmailAndAtiya,  n::Int=200) = rand(backing_distribition(d), n)
 
 
 """
@@ -70,7 +70,7 @@ function backing_distribition(::Likas1)
     MixtureModel([Normal(-7,0.5), Uniform(-3,-1), Uniform(1,3), Normal(7,0.5)])
 end
 approximate_support(::Likas1) = RealInterval(-12.0,12.0)
-Base.rand(d::Likas1,  n=5000) = rand(backing_distribition(d), n)
+Base.rand(d::Likas1,  n::Int=5000) = rand(backing_distribition(d), n)
 
 
 for wrapper in [:MagdonIsmailAndAtiya, :Likas1]
@@ -160,8 +160,8 @@ function Distributions.cdf(::Likas2, x::Real)
     end
 end
 
-function Base.rand(::Likas2, n=5000)
-    likas_2_cdf(x) = cdf(likas_2, x)
+function Base.rand(::Likas2, n::Int=5000)
+    likas_2_cdf(x) = cdf(Likas2(), x)
     [sample_from_cdf(likas_2_cdf, 2.5) for _ in 1:n]
 end
 
