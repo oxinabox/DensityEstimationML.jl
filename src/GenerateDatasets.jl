@@ -6,10 +6,36 @@ This module contains functiosn for generating datasets suitable for testing dens
 module GenerateDatasets
 
 using Distributions
+using StaticArrays
+
 import DensityEstimationML: sample_from_cdf
 
+export approximate_support
+
+struct RectangularInterval{T}
+	lb::T
+	ub::T
+end
+
+Base.minimum(iv::RectangularInterval) = iv.lb
+Base.maximum(iv::RectangularInterval) = iv.ub
+
+
+
+
+
 """
-Generates a dataset with the same parameters as used in the tests of
+    approximate_support(d)
+
+Returns the effective support for a distribution,
+This can be overloaded to provide a restricted support for distribitions that have infinitely large supports,
+but can be approximated by bounding them.
+"""
+approximate_support(d) = support(d)
+
+
+"""
+The distribution used by
 Magdon-Ismail and Atiya, in their 1998 NIPS paper "Neural Networks for Denity Estimation.
 This is a 1D GMM with two peaks, without any conditioning on any properties.
 for their SIC and SLC method they tested with  n=100,
@@ -17,29 +43,31 @@ for their SIC they additionally tested with n=200
 
 This dataset is not conditional.
 """
-function magdon_ismail_and_atiya(n=200)
+function magdon_ismail_and_atiya()
 	comp1 = Normal(-30, 3)
 	comp2 = Normal(9, 9)
-	distr = MixtureModel([comp1, comp2], [0.3, 0.7])
-	rand(distr, n)
+	MixtureModel([comp1, comp2], [0.3, 0.7])
 end
 
-Distributions.support(::typeof(magdon_ismail_and_atiya)) = (-Inf, Inf)
+approximate_support(::typeof(magdon_ismail_and_atiya)) = RealInterval(-50.0, 50.0)
+Base.rand(distfun::typeof(magdon_ismail_and_atiya),  n=200) = rand(distfun(), n)
+
 
 """
-Generates a dataset with the same parameters as used in example 1 of tests by
+The distribution used by example 1 of
 Likas A, 2001, "Probability density estimation using artificial neural networks"
 
 They only estimate it between -12 and 12
 
 This dataset is not conditional.
 """
-function likas_1(n=5000)
-	distr = MixtureModel([Normal(-7,0.5), Uniform(-3,-1), Uniform(1,3), Normal(7,0.5)])
-	rand(distr, n)
+function likas_1()
+	MixtureModel([Normal(-7,0.5), Uniform(-3,-1), Uniform(1,3), Normal(7,0.5)])
 end
 
-Distributions.support(::typeof(likas_1))=(-12.0,12.0)
+approximate_support(::typeof(likas_1)) = RealInterval(-12.0,12.0)
+Base.rand(distfun::typeof(likas_1),  n=5000) = rand(distfun(), n)
+
 
 """
 Generates a dataset with the same parameters as used in example 2 of tests by
@@ -69,25 +97,27 @@ F(x)=\dfrac{1}{6.5523}\begin{cases}
 Both works use the same 5000 samples
 This dataset is not conditional.
 """
-function likas_2(n=5000)
-	function likas_2_cdf(x)
-	    1/6.5523 * if (x ≤ 0)
-		0.0
-	    elseif (0<x ≤ 2)
-		2x-x^2/4
-	    elseif (2<x≤3+√2)
-		-x^3/3 + 3x^2 -7x + 23/3
-	    else
-		@assert(3+√2 < x)
-		6.5523
-	    end
-	end
+likas_2()=nothing
 
+function Distributions.cdf(::typeof(likas_2), x)
+    1/6.5523 * if (x ≤ 0)
+	0.0
+    elseif (0<x ≤ 2)
+	2x-x^2/4
+    elseif (2<x≤3+√2)
+	-x^3/3 + 3x^2 -7x + 23/3
+    else
+	@assert(3+√2 < x)
+	6.5523
+    end
+end
 
+function Base.rand(::typeof(likas_2), n=5000)
+	likas_2_cdf(x) = cdf(likas_2, x)
 	[sample_from_cdf(likas_2_cdf, 2.5) for _ in 1:n]
 end
 
-Distributions.support(::typeof(likas_2))=(-1.0, 6.0)
+Distributions.support(::typeof(likas_2)) = RealInterval(-1.0, 6.0)
 
 const modha_and_fainman=likas_2
 
@@ -105,10 +135,9 @@ Likas used 5000 samples.
 
 This dataset is not conditional.
 """
-function likas_3(n=5000)
-	0.2 .* rand((2, n))
-end
+likas_3()=nothing
 
-Distributions.support(::typeof(likas_3))=([0., 0.],[0.2, 0.2])
+Distributions.support(::typeof(likas_3))=RectangularInterval([0., 0.],[0.2, 0.2])
+Base.rand(::typeof(likas_3), n=200) = 0.2 .* rand((2, n))
 
 end #module

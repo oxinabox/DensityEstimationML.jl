@@ -1,10 +1,11 @@
 module DensityEstimationML
-
-export GenerateDatasets
+using Reexport
 
 include("./prob_utils.jl")
-include("./GenerateDatasets.jl") 
 
+include("./GenerateDatasets.jl")
+
+@reexport using .GenerateDatasets
 
 
 end # module
