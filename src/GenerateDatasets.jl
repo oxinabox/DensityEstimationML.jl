@@ -36,7 +36,7 @@ approximate_support(d) = support(d)
 
 """
 The distribution used by
-Magdon-Ismail and Atiya, in their 1998 NIPS paper "Neural Networks for Denity Estimation.
+Magdon-Ismail and Atiya, in their 1998 NIPS paper "Neural Networks for Denity Estimation."
 This is a 1D GMM with two peaks, without any conditioning on any properties.
 for their SIC and SLC method they tested with  n=100,
 for their SIC they additionally tested with n=200
