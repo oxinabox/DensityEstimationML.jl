@@ -9,7 +9,7 @@ using Distributions
 using StatsBase
 import DensityEstimationML: sample_from_cdf
 
-export approximate_support
+export approximate_support, original_sample
 
 struct RectangularInterval{T}
     lb::T
@@ -22,16 +22,28 @@ Base.maximum(iv::RectangularInterval) = iv.ub
 
 
 
-
 """
     approximate_support(d)
 
 Returns the effective support for a distribution,
 This can be overloaded to provide a restricted support for distribitions that have infinitely large supports,
 but can be approximated by bounding them.
+Falls back to `support(d)` + 10% to either side
 """
-approximate_support(d) = support(d)
+function approximate_support(d)
+    sp = support(d)
+    a=minimum(sp)
+    b=maximum(sp)
+    len = b-a
+    typeof(sp)(a-0.1*len, b+0.1*len)
+end
 
+"""
+    original_sample(d)
+Returns a sample of a distribution of the size that was used in the corresponding paper.
+Falls back to a default of 5000 elements
+"""
+original_sample(d) = rand(d, 5000)
 
 """
 The distribution used by
@@ -46,13 +58,13 @@ struct MagdonIsmailAndAtiya <: UnivariateDistribution{Continuous}
 end
 
 function backing_distribition(::MagdonIsmailAndAtiya)
-        comp1 = Normal(-30, 3)
-        comp2 = Normal(9, 9)
-        MixtureModel([comp1, comp2], [0.3, 0.7])
+    comp1 = Normal(-30, 3)
+    comp2 = Normal(9, 9)
+    MixtureModel([comp1, comp2], [0.3, 0.7])
 end
 
 approximate_support(::MagdonIsmailAndAtiya) = RealInterval(-50.0, 50.0)
-Base.rand(d::MagdonIsmailAndAtiya,  n::Int=200) = rand(backing_distribition(d), n)
+original_sample(d::MagdonIsmailAndAtiya) = rand(backing_distribition(d), 200)
 
 
 """
@@ -70,7 +82,7 @@ function backing_distribition(::Likas1)
     MixtureModel([Normal(-7,0.5), Uniform(-3,-1), Uniform(1,3), Normal(7,0.5)])
 end
 approximate_support(::Likas1) = RealInterval(-12.0,12.0)
-Base.rand(d::Likas1,  n::Int=5000) = rand(backing_distribition(d), n)
+original_sample(d::Likas1) = rand(backing_distribition(d), 5000)
 
 
 for wrapper in [:MagdonIsmailAndAtiya, :Likas1]
@@ -137,7 +149,7 @@ function Distributions.pdf(::Likas2, x::Real)
     1/6.5523 * if (x ≤ 0)
     0.0
     elseif (0<x ≤ 2)
-    2.0-x/2
+    2.0-x^2/2
     elseif (2<x≤3+√2)
     2.0-(x-3.0)^2
     else
@@ -160,10 +172,13 @@ function Distributions.cdf(::Likas2, x::Real)
     end
 end
 
-function Base.rand(::Likas2, n::Int=5000)
+
+function Base.rand(::Likas2)
     likas_2_cdf(x) = cdf(Likas2(), x)
-    [sample_from_cdf(likas_2_cdf, 2.5) for _ in 1:n]
+    sample_from_cdf(likas_2_cdf, 2.5)
 end
+
+original_sample(d::Likas2) = rand(d, 5000)
 
 Base.minimum(::Likas2) = -1.0
 Base.maximum(::Likas2) = 6.0
@@ -188,6 +203,8 @@ struct Likas3
 end
 
 Distributions.support(::Likas3)=RectangularInterval([0., 0.],[0.2, 0.2])
-Base.rand(::Likas3, n=200) = 0.2 .* rand((2, n))
+Base.rand(::Likas3) = 0.2 .* rand(2)
+Base.length(::Likas3) = 2
+original_sample(::Likas3, n=5000) = 0.2 .* rand((2, n))
 
 end #module
