@@ -149,7 +149,7 @@ function Distributions.pdf(::Likas2, x::Real)
     1/6.5523 * if (x ≤ 0)
     0.0
     elseif (0<x ≤ 2)
-    2.0-x^2/2
+    2.0-x/2
     elseif (2<x≤3+√2)
     2.0-(x-3.0)^2
     else
@@ -174,8 +174,9 @@ end
 
 
 function Base.rand(::Likas2)
-    likas_2_cdf(x) = cdf(Likas2(), x)
-    sample_from_cdf(likas_2_cdf, 2.5)
+    likas_2_cdf(x) = cdf(Likas2(), x[1])
+    likas_2_pdf(x) = pdf(Likas2(), x[1])
+    sample_from_cdf(likas_2_cdf, likas_2_pdf, [2.5])[1]
 end
 
 original_sample(d::Likas2) = rand(d, 5000)
