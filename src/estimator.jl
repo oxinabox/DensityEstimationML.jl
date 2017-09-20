@@ -62,7 +62,7 @@ function StatsBase.fit!(estimator::NeuralDensityEstimator, observations;
     for ii in 1:epochs
         outs = run(estimator.sess,
             [callback_nodes..., estimator.optimizer],
-            Dict(estimator.t=>observations'))
+            Dict(estimator.t=>observations))
         
         if ii % 100 == 1
             callback(ii, Dict(zip(callback_vars, outs[1:end-1])))

@@ -204,7 +204,7 @@ struct Likas3 <: ContinuousMultivariateDistribution
 end
 
 Distributions.support(::Likas3)=RectangularInterval((0., 0.),(0.2, 0.2))
-Distributions.approximate_support(::Likas3)=RectangularInterval((-0.1, -0.1),(0.3, 0.3))
+approximate_support(::Likas3)=RectangularInterval((-0.1, -0.1),(0.3, 0.3))
 Base.rand(::Likas3) = 0.2 .* rand(2)
 Base.length(::Likas3) = 2
 original_sample(::Likas3, n=5000) = 0.2 .* rand((2, n))
