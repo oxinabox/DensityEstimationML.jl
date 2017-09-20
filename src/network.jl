@@ -67,7 +67,17 @@ function NeuralDensityEstimator{N}(prob_layer_sizes, support_min::SVector{N,<:Re
         yt = TensorFlow.identity(network(t))
         
         denominator = reduce_prod(ysmax-ysmin) #area
-        numerator = TensorFlow.identity(gradients(yt,t))
+
+        # Take a derivative with respect to each column, i.e. each variable
+        dytn = yt
+        for column_ii in 1:N
+            @show dytn
+            t_col = gather(t, column_ii; name="t_$(column_ii)")
+            @show t_col
+            grads = gradients(dytn, t_col)
+            dytn = TensorFlow.identity; grads, name="dyt_$(column_ii)")
+        end
+        numerator = TensorFlow.identity(dytn)
         pdf = numerator/denominator
         @show pdf
 #        @assert(get_shape(pdf,
