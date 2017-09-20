@@ -3,6 +3,7 @@ module DensityEstimationML
 using StatsBase
 using Distributions
 using TensorFlow
+using StaticArrays
 
 using Reexport
 

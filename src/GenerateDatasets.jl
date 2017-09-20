@@ -7,6 +7,7 @@ module GenerateDatasets
 
 using Distributions
 using StatsBase
+using StaticArrays
 import DensityEstimationML: sample_from_cdf
 
 export approximate_support, original_sample
@@ -203,14 +204,15 @@ This dataset is not conditional.
 struct Likas3 <: ContinuousMultivariateDistribution
 end
 
-Distributions.support(::Likas3)=RectangularInterval((0., 0.),(0.2, 0.2))
-approximate_support(::Likas3)=RectangularInterval((-0.1, -0.1),(0.3, 0.3))
+Distributions.support(::Likas3)=RectangularInterval(@SVector([0., 0.]), @SVector([0.2, 0.2]))
+approximate_support(::Likas3)=RectangularInterval(@SVector([-0.1, -0.1]), @SVector([0.3, 0.3]))
 Base.rand(::Likas3) = 0.2 .* rand(2)
 Base.length(::Likas3) = 2
 original_sample(::Likas3, n=5000) = 0.2 .* rand((2, n))
 
 
 function Distributions._pdf(d::Likas3, X::AbstractVector)
+    length(X)==2 || ArgumentError("Likas3 only supports 2D inputs")
     if all(0.<X.<0.2)
         1/(0.2^2)
     else

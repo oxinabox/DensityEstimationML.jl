@@ -6,7 +6,7 @@ end
 
 
 function NeuralDensityEstimator(prob_layer_sizes, support_min::Real, support_max::Real)
-    NeuralDensityEstimator(prob_layer_sizes, (support_min,), (support_max,))
+    NeuralDensityEstimator(prob_layer_sizes, SVector(support_min), SVector(support_max))
 end
 
 
@@ -28,7 +28,7 @@ Note the support boundries must be rectangular, if your support is not rectangul
 you must make a domain transform on your observations before using this.
 
 """
-function NeuralDensityEstimator{N}(prob_layer_sizes, support_min::NTuple{N, Real}, support_max::NTuple{N,Real})
+function NeuralDensityEstimator{N}(prob_layer_sizes, support_min::SVector{N,<:Real}, support_max::SVector{N,<:Real})
     sess = Session(Graph())
     @tf begin
         t = placeholder(Float32, shape=[N, -1])
@@ -64,12 +64,13 @@ function NeuralDensityEstimator{N}(prob_layer_sizes, support_min::NTuple{N, Real
         
         ysmin = TensorFlow.identity(network(smin))
         ysmax = TensorFlow.identity(network(smax))
-        yt = network(t)
+        yt = TensorFlow.identity(network(t))
         
         denominator = reduce_prod(ysmax-ysmin) #area
-        numerator = gradients(yt,t)
+        numerator = TensorFlow.identity(gradients(yt,t))
         pdf = numerator/denominator
-        
+        @show pdf
+#        @assert(get_shape(pdf,
         
         n_points = TensorFlow.shape(t)[2]
         loglikelihood = reduce_sum(log(numerator)) - n_points.*log(denominator)
