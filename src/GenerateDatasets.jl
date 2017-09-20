@@ -200,12 +200,24 @@ Likas used 5000 samples.
 
 This dataset is not conditional.
 """
-struct Likas3
+struct Likas3 <: ContinuousMultivariateDistribution
 end
 
-Distributions.support(::Likas3)=RectangularInterval([0., 0.],[0.2, 0.2])
+Distributions.support(::Likas3)=RectangularInterval((0., 0.),(0.2, 0.2))
+Distributions.approximate_support(::Likas3)=RectangularInterval((-0.1, -0.1),(0.3, 0.3))
 Base.rand(::Likas3) = 0.2 .* rand(2)
 Base.length(::Likas3) = 2
 original_sample(::Likas3, n=5000) = 0.2 .* rand((2, n))
+
+
+function Distributions._pdf(d::Likas3, X::AbstractVector)
+    if all(0.<X.<0.2)
+        1/(0.2^2)
+    else
+        0.0
+    end
+end
+
+Distributions._logpdf(d::Likas3, X::AbstractVector) = log(Distributions._pdf(d,X))
 
 end #module
