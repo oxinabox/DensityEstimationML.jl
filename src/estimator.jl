@@ -4,6 +4,14 @@
 export NeuralDensityEstimator, component_weights, condition!
 
 
+"""
+    autostatic_array(a)
+
+function to automatically convert `a` into an appropriatly sized StaticArray
+"""
+autostatic_array(a) = _autostatic_array(Size(size(a)), a);
+_autostatic_array(S, a) = S(a)
+
 immutable NeuralDensityEstimator{N}
     sess::Session
     
@@ -15,40 +23,46 @@ immutable NeuralDensityEstimator{N}
 end
 
 
+for (outer, inner) in [(:(Distributions.pdf), :_pdf), (:(Distributions.loglikelihood), :_loglikelihood)]
+    @eval begin
+        # Entry
+        function $outer(est::NeuralDensityEstimator, ts::AbstractArray)
+        #    @show (1, typeof(ts))
+            $outer(est, autostatic_array(ts))
+        end
 
-function Distributions.pdf(est::NeuralDensityEstimator{1}, t::Real)
-    pdf(est, SMatrix{1,1}(t)) |> first
+        # Single observation
+        function $outer(est::NeuralDensityEstimator{1}, t::Real)
+        #    @show (2, typeof(ts))
+            $inner(est, SMatrix{1,1}(t)) |> first
+        end
+
+        function $outer(est::NeuralDensityEstimator{1}, ts::StaticVector{1})
+        #    @show (3, typeof(ts))
+            $inner(est, reshape(ts[1], (1,1)))
+        end
+
+        function $outer{N}(est::NeuralDensityEstimator{N}, ts::StaticVector{N})
+        #    @show (4, typeof(ts))
+            $inner(est, reshape(ts,Val(2)))
+        end
+
+        #M is number of observations
+        function $outer{M}(est::NeuralDensityEstimator{1}, ts::StaticVector{M})
+        #    @show (5, typeof(ts))
+            $inner(est, reshape(ts, (1,M)))
+        end
+    end
 end
 
-
-function Distributions.pdf(est::NeuralDensityEstimator, ts::AbstractArray{<:Real})
-    pdf(est, SArray{Tuple{size(ts)...}}(ts))
-end
-
-# Single observation
-function Distributions.pdf{N}(est::NeuralDensityEstimator{N}, ts::SVector{N})
-    pdf(est, SMatrix{N,1}(ts))
-end
-
-#M is number of observations
-function Distributions.pdf{N, M}(est::NeuralDensityEstimator{N}, ts::SMatrix{N, M})
+function _pdf{N}(est::NeuralDensityEstimator{N}, ts::AbstractMatrix)
+    size(ts,1) == N || error("wrong dimensions, expected $N, was given $(size(ts,1))")
     gr = est.sess.graph
     run(est.sess, est.pdf, Dict(est.t=>ts)) |> vec
 end
 
-
-
-function Distributions.loglikelihood(est::NeuralDensityEstimator, ts::AbstractArray{<:Real})
-    loglikelihood(est, SArray{Tuple{size(ts)...}}(ts))
-end
-
-# Single observation
-function Distributions.loglikelihood{N}(est::NeuralDensityEstimator{N}, ts::SVector{N})
-    loglikelihood(est, SMatrix{N,1}(ts))
-end
-
-
-function Distributions.loglikelihood{N, M}(est::NeuralDensityEstimator{N}, ts::SMatrix{N,M})
+function _loglikelihood{N}(est::NeuralDensityEstimator{N}, ts::AbstractMatrix)
+    size(ts,1) == N || error("wrong dimensions, expected $N, was given $(size(ts,1))")
     gr = est.sess.graph
     run(est.sess, gr["loglikelihood"], Dict(est.t=>ts))
 end

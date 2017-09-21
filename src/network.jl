@@ -28,7 +28,7 @@ Note the support boundries must be rectangular, if your support is not rectangul
 you must make a domain transform on your observations before using this.
 
 """
-function NeuralDensityEstimator{N}(prob_layer_sizes, support_min::SVector{N,<:Real}, support_max::SVector{N,<:Real})
+function NeuralDensityEstimator{N}(prob_layer_sizes, support_min::StaticVector{N}, support_max::StaticVector{N})
     sess = Session(Graph())
     @tf begin
         t = placeholder(Float32, shape=[N, -1])
@@ -69,14 +69,13 @@ function NeuralDensityEstimator{N}(prob_layer_sizes, support_min::SVector{N,<:Re
         denominator = reduce_prod(ysmax-ysmin) #area
 
         # Take a derivative with respect to each column, i.e. each variable
-        dytn = yt
-        for column_ii in 1:N
-            @show dytn
-            t_col = gather(t, column_ii; name="t_$(column_ii)")
-            @show t_col
-            grads = gradients(dytn, t_col)
-            dytn = TensorFlow.identity; grads, name="dyt_$(column_ii)")
-        end
+        #dytn = yt
+        #for column_ii in 1:N
+        #    t_col = gather(t, column_ii; name="t_$(column_ii)")
+        #    grads = gradients(dytn, t_col)
+        #    dytn = TensorFlow.identity; grads, name="dyt_$(column_ii)")
+        #end
+        dytn = gradients(yt, t)
         numerator = TensorFlow.identity(dytn)
         pdf = numerator/denominator
         @show pdf
