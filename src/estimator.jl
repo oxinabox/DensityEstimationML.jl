@@ -12,7 +12,7 @@ function to automatically convert `a` into an appropriatly sized StaticArray
 autostatic_array(a) = _autostatic_array(Size(size(a)), a);
 _autostatic_array(S, a) = S(a)
 
-immutable NeuralDensityEstimator{N}
+struct NeuralDensityEstimator{N}
     sess::Session
     
     #Network nodes
@@ -42,26 +42,26 @@ for (outer, inner) in [(:(Distributions.pdf), :_pdf), (:(Distributions.loglikeli
             $inner(est, reshape(ts[1], (1,1)))
         end
 
-        function $outer{N}(est::NeuralDensityEstimator{N}, ts::StaticVector{N})
+        function $outer(est::NeuralDensityEstimator{N}, ts::StaticVector{N}) where N
         #    @show (4, typeof(ts))
             $inner(est, reshape(ts,Val(2)))
         end
 
         #M is number of observations
-        function $outer{M}(est::NeuralDensityEstimator{1}, ts::StaticVector{M})
+        function $outer(est::NeuralDensityEstimator{1}, ts::StaticVector{M}) where M
         #    @show (5, typeof(ts))
             $inner(est, reshape(ts, (1,M)))
         end
     end
 end
 
-function _pdf{N}(est::NeuralDensityEstimator{N}, ts::AbstractMatrix)
+function _pdf(est::NeuralDensityEstimator{N}, ts::AbstractMatrix) where N
     size(ts,1) == N || error("wrong dimensions, expected $N, was given $(size(ts,1))")
     gr = est.sess.graph
     run(est.sess, est.pdf, Dict(est.t=>ts)) |> vec
 end
 
-function _loglikelihood{N}(est::NeuralDensityEstimator{N}, ts::AbstractMatrix)
+function _loglikelihood(est::NeuralDensityEstimator{N}, ts::AbstractMatrix) where N
     size(ts,1) == N || error("wrong dimensions, expected $N, was given $(size(ts,1))")
     gr = est.sess.graph
     run(est.sess, gr["loglikelihood"], Dict(est.t=>ts))
@@ -90,9 +90,9 @@ function StatsBase.fit!(estimator::NeuralDensityEstimator{1}, observations::Abst
     fit!(estimator, reshape(observations, (1,length(observations))) ; kwargs...)
 end
 
-function StatsBase.fit!{N}(estimator::NeuralDensityEstimator{N}, observations::AbstractMatrix;
+function StatsBase.fit!(estimator::NeuralDensityEstimator{N}, observations::AbstractMatrix;
     callback=ignore, callback_vars=["ysmin", "ysmax", "loglikelihood", "working_loss"],
-    epochs = 20_000)
+    epochs = 20_000) where N
    
     size(observations,1)==N || throw(ArgumentError("Estimator is for $(N) dimensional domain, but observations are $(size(observations,1)) dimensional"))
     
